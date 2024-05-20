@@ -1,0 +1,196 @@
+import tkinter as tk
+from tkinter import ttk
+
+# Stack class
+class Stack:
+    def __init__(self):
+        self.items = []
+
+    def is_empty(self):
+        return self.items == []
+
+    def push(self, item):
+        self.items.append(item)
+
+    def pop(self):
+        if not self.is_empty():
+            return self.items.pop()
+        else:
+            return None
+
+    def size(self):
+        return len(self.items)
+
+# Queue class
+class Queue:
+    def __init__(self):
+        self.items = []
+
+    def is_empty(self):
+        return self.items == []
+
+    def enqueue(self, item):
+        self.items.insert(0, item)
+
+    def dequeue(self):
+        if not self.is_empty():
+            return self.items.pop()
+        else:
+            return None
+
+    def size(self):
+        return len(self.items)
+
+# Converter Application
+class UnitConverterApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Simple Unit Converter")
+
+        self.conversion_stack = Stack()
+        self.history_queue = Queue()
+
+        self.create_widgets()
+
+    def create_widgets(self):
+        # Input Label
+        self.input_label = ttk.Label(self.root, text="Masukkan Nilai:")
+        self.input_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
+
+        # Input Entry
+        self.input_entry = ttk.Entry(self.root, width=15, validate="key")
+        self.input_entry['validatecommand'] = (self.input_entry.register(self.validate_input), '%P')
+        self.input_entry.grid(row=0, column=1, padx=5, pady=5)
+
+        # From Unit Label
+        self.from_unit_label = ttk.Label(self.root, text="Dari Satuan:")
+        self.from_unit_label.grid(row=1, column=0, padx=5, pady=5, sticky="w")
+
+        # From Unit Combobox
+        self.from_unit_var = tk.StringVar()
+        self.from_unit_combobox = ttk.Combobox(self.root, width=15, textvariable=self.from_unit_var, state="readonly")
+        self.from_unit_combobox["values"] = ["Milimeter", "Sentimeter", "Meter", "Kilometer", "Mil", "Inci", "Kaki"]
+        self.from_unit_combobox.current(0)
+        self.from_unit_combobox.grid(row=1, column=1, padx=5, pady=5)
+
+        # To Unit Label
+        self.to_unit_label = ttk.Label(self.root, text="Ke Satuan:")
+        self.to_unit_label.grid(row=2, column=0, padx=5, pady=5, sticky="w")
+
+        # To Unit Combobox
+        self.to_unit_var = tk.StringVar()
+        self.to_unit_combobox = ttk.Combobox(self.root, width=15, textvariable=self.to_unit_var, state="readonly")
+        self.to_unit_combobox["values"] = ["Milimeter", "Sentimeter", "Meter", "Kilometer", "Mil", "Inci", "Kaki"]
+        self.to_unit_combobox.current(0)
+        self.to_unit_combobox.grid(row=2, column=1, padx=5, pady=5)
+
+        # Convert Button
+        self.convert_button = ttk.Button(self.root, text="Convert", command=self.convert)
+        self.convert_button.grid(row=3, column=1, padx=5, pady=5)
+
+        # Reset Button
+        self.reset_button = ttk.Button(self.root, text="Reset", command=self.reset)
+        self.reset_button.grid(row=3, column=2, padx=5, pady=5)
+
+        # Result Label
+        self.result_label = ttk.Label(self.root, text="Hasil Konversi:")
+        self.result_label.grid(row=4, column=0, padx=5, pady=5, sticky="w")
+
+        # Result Display
+        self.converted_value = tk.StringVar()
+        self.result_display = ttk.Label(self.root, textvariable=self.converted_value)
+        self.result_display.grid(row=4, column=1, columnspan=2, padx=5, pady=5, sticky="w")
+
+        # History Label
+        self.history_label = ttk.Label(self.root, text="Riwayat Konversi:")
+        self.history_label.grid(row=5, column=0, padx=5, pady=5, sticky="w")
+
+        # History Display
+        self.history_display = tk.Text(self.root, height=10, width=50)
+        self.history_display.grid(row=6, column=0, columnspan=3, padx=5, pady=5)
+
+    def validate_input(self, new_value):
+        # Allow empty input
+        if new_value == "":
+            return True
+        # Only allow numeric input
+        try:
+            float(new_value)
+            return True
+        except ValueError:
+            return False
+
+    def convert(self):
+        input_value = self.input_entry.get()
+        if input_value == "":
+            self.converted_value.set("Masukkan angka yang valid.")
+            return
+        
+        input_value = float(input_value)
+        from_unit = self.from_unit_var.get()
+        to_unit = self.to_unit_var.get()
+
+        converted_value = self.convert_units(input_value, from_unit, to_unit)
+
+        if converted_value.is_integer():
+            converted_value = int(converted_value)
+            input_value = int(input_value)
+            result_text = f"{input_value} {from_unit} = {converted_value} {to_unit}"
+        else:
+            result_text = f"{input_value:g} {from_unit} = {converted_value:g} {to_unit}"
+
+        self.converted_value.set(result_text)
+
+        # Push to stack and queue
+        self.conversion_stack.push(result_text)
+        self.history_queue.enqueue(result_text)
+
+        # Update history display
+        self.update_history_display()
+
+    def convert_units(self, value, from_unit, to_unit):
+        conversion_factors_to_meter = {
+            "Milimeter": 0.001,
+            "Sentimeter": 0.01,
+            "Meter": 1,
+            "Kilometer": 1000,
+            "Mil": 1609.34,
+            "Inci": 0.0254,
+            "Kaki": 0.3048
+        }
+
+        if from_unit not in conversion_factors_to_meter or to_unit not in conversion_factors_to_meter:
+            return None
+
+        value_in_meters = value * conversion_factors_to_meter[from_unit]
+        converted_value = value_in_meters / conversion_factors_to_meter[to_unit]
+
+        return converted_value
+
+    def update_history_display(self):
+        self.history_display.delete(1.0, tk.END)
+        temp_queue = Queue()
+
+        while not self.history_queue.is_empty():
+            entry = self.history_queue.dequeue()
+            self.history_display.insert(tk.END, entry + '\n')
+            temp_queue.enqueue(entry)
+
+        # Restore original queue
+        while not temp_queue.is_empty():
+            self.history_queue.enqueue(temp_queue.dequeue())
+
+    def reset(self):
+        self.input_entry.delete(0, tk.END)
+        self.converted_value.set("")
+        self.history_display.delete(1.0, tk.END)
+        self.conversion_stack = Stack()
+        self.history_queue = Queue()
+
+def main():
+    root = tk.Tk()
+    app = UnitConverterApp(root)
+    root.mainloop()
+
+if __name__ == "__main__":
+    main()
