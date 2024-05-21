@@ -46,6 +46,8 @@ class UnitConverterApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Simple Unit Converter")
+        self.style = ttk.Style()
+        self.style.theme_use('clam') 
 
         self.conversion_stack = Stack()
         self.history_queue = Queue()
@@ -53,67 +55,117 @@ class UnitConverterApp:
         self.create_widgets()
 
     def create_widgets(self):
+        padding_options = {'padx': 10, 'pady': 5}
+
+        # Main Frame
+        self.main_frame = ttk.Frame(self.root, padding="10", style="Main.TFrame")
+        self.main_frame.grid(row=0, column=0, sticky="NSEW")
+
+        # Add styles
+        self.style.configure("Main.TFrame", background="#f0f0f0")
+        self.style.configure("TLabel", background="#f0f0f0", font=("Helvetica", 10))
+        self.style.configure("Heading.TLabel", background="#4a90e2", foreground="white", font=("Helvetica", 16, "bold"))
+        self.style.configure("TButton", background="#4a90e2", foreground="white", font=("Helvetica", 10, "bold"))
+
+        # Heading
+        self.heading_label = ttk.Label(self.main_frame, text="Unit Converter", style="Heading.TLabel")
+        self.heading_label.grid(row=0, column=0, columnspan=3, pady=10, sticky="EW")
+
         # Input Label
-        self.input_label = ttk.Label(self.root, text="Masukkan Nilai:")
-        self.input_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        self.input_label = ttk.Label(self.main_frame, text="Masukkan Nilai:")
+        self.input_label.grid(row=1, column=0, **padding_options, sticky="w")
 
         # Input Entry
-        self.input_entry = ttk.Entry(self.root, width=15, validate="key")
+        self.input_entry = ttk.Entry(self.main_frame, width=20, validate="key")
         self.input_entry['validatecommand'] = (self.input_entry.register(self.validate_input), '%P')
-        self.input_entry.grid(row=0, column=1, padx=5, pady=5)
+        self.input_entry.grid(row=1, column=1, **padding_options)
+
+        # Conversion Type Label
+        self.conversion_type_label = ttk.Label(self.main_frame, text="Jenis Konversi:")
+        self.conversion_type_label.grid(row=2, column=0, **padding_options, sticky="w")
+
+        # Conversion Type Combobox
+        self.conversion_type_var = tk.StringVar()
+        self.conversion_type_combobox = ttk.Combobox(self.main_frame, width=20, textvariable=self.conversion_type_var, state="readonly")
+        self.conversion_type_combobox["values"] = ["Panjang", "Massa", "Suhu", "Waktu"]
+        self.conversion_type_combobox.current(0)
+        self.conversion_type_combobox.grid(row=2, column=1, **padding_options)
+        self.conversion_type_combobox.bind("<<ComboboxSelected>>", self.update_unit_options)
 
         # From Unit Label
-        self.from_unit_label = ttk.Label(self.root, text="Dari Satuan:")
-        self.from_unit_label.grid(row=1, column=0, padx=5, pady=5, sticky="w")
+        self.from_unit_label = ttk.Label(self.main_frame, text="Dari Satuan:")
+        self.from_unit_label.grid(row=3, column=0, **padding_options, sticky="w")
 
         # From Unit Combobox
         self.from_unit_var = tk.StringVar()
-        self.from_unit_combobox = ttk.Combobox(self.root, width=15, textvariable=self.from_unit_var, state="readonly")
-        self.from_unit_combobox["values"] = ["Milimeter", "Sentimeter", "Meter", "Kilometer", "Mil", "Inci", "Kaki"]
-        self.from_unit_combobox.current(0)
-        self.from_unit_combobox.grid(row=1, column=1, padx=5, pady=5)
+        self.from_unit_combobox = ttk.Combobox(self.main_frame, width=20, textvariable=self.from_unit_var, state="readonly")
+        self.from_unit_combobox.grid(row=3, column=1, **padding_options)
 
         # To Unit Label
-        self.to_unit_label = ttk.Label(self.root, text="Ke Satuan:")
-        self.to_unit_label.grid(row=2, column=0, padx=5, pady=5, sticky="w")
+        self.to_unit_label = ttk.Label(self.main_frame, text="Ke Satuan:")
+        self.to_unit_label.grid(row=4, column=0, **padding_options, sticky="w")
 
         # To Unit Combobox
         self.to_unit_var = tk.StringVar()
-        self.to_unit_combobox = ttk.Combobox(self.root, width=15, textvariable=self.to_unit_var, state="readonly")
-        self.to_unit_combobox["values"] = ["Milimeter", "Sentimeter", "Meter", "Kilometer", "Mil", "Inci", "Kaki"]
-        self.to_unit_combobox.current(0)
-        self.to_unit_combobox.grid(row=2, column=1, padx=5, pady=5)
+        self.to_unit_combobox = ttk.Combobox(self.main_frame, width=20, textvariable=self.to_unit_var, state="readonly")
+        self.to_unit_combobox.grid(row=4, column=1, **padding_options)
 
         # Convert Button
-        self.convert_button = ttk.Button(self.root, text="Convert", command=self.convert)
-        self.convert_button.grid(row=3, column=1, padx=5, pady=5)
+        self.convert_button = ttk.Button(self.main_frame, text="Convert", command=self.convert)
+        self.convert_button.grid(row=5, column=1, **padding_options)
 
         # Reset Button
-        self.reset_button = ttk.Button(self.root, text="Reset", command=self.reset)
-        self.reset_button.grid(row=3, column=2, padx=5, pady=5)
+        self.reset_button = ttk.Button(self.main_frame, text="Reset", command=self.reset)
+        self.reset_button.grid(row=5, column=2, **padding_options)
+
+        # Separator
+        self.separator = ttk.Separator(self.main_frame, orient='horizontal')
+        self.separator.grid(row=6, column=0, columnspan=3, pady=10, sticky='ew')
 
         # Result Label
-        self.result_label = ttk.Label(self.root, text="Hasil Konversi:")
-        self.result_label.grid(row=4, column=0, padx=5, pady=5, sticky="w")
+        self.result_label = ttk.Label(self.main_frame, text="Hasil Konversi:")
+        self.result_label.grid(row=7, column=0, **padding_options, sticky="w")
 
         # Result Display
         self.converted_value = tk.StringVar()
-        self.result_display = ttk.Label(self.root, textvariable=self.converted_value)
-        self.result_display.grid(row=4, column=1, columnspan=2, padx=5, pady=5, sticky="w")
+        self.result_display = ttk.Label(self.main_frame, textvariable=self.converted_value, foreground="blue")
+        self.result_display.grid(row=7, column=1, columnspan=2, **padding_options, sticky="w")
 
         # History Label
-        self.history_label = ttk.Label(self.root, text="Riwayat Konversi:")
-        self.history_label.grid(row=5, column=0, padx=5, pady=5, sticky="w")
+        self.history_label = ttk.Label(self.main_frame, text="Riwayat Konversi:")
+        self.history_label.grid(row=8, column=0, **padding_options, sticky="w")
 
         # History Display
-        self.history_display = tk.Text(self.root, height=10, width=50)
-        self.history_display.grid(row=6, column=0, columnspan=3, padx=5, pady=5)
+        self.history_display = tk.Text(self.main_frame, height=10, width=50, background="#ffffff", foreground="black")
+        self.history_display.grid(row=9, column=0, columnspan=3, padx=10, pady=10)
+
+        # Initialize unit options
+        self.update_unit_options()
+
+
+    def update_unit_options(self, event=None):
+        conversion_type = self.conversion_type_var.get()
+        if conversion_type == "Panjang":
+            units = ["Milimeter", "Sentimeter", "Meter", "Kilometer", "Mil", "Inci", "Kaki"]
+        elif conversion_type == "Massa":
+            units = ["Gram", "Kilogram", "Ons", "Pound"]
+        elif conversion_type == "Suhu":
+            units = ["Celsius", "Fahrenheit", "Kelvin"]
+        elif conversion_type == "Waktu":
+             units = ["Detik", "Menit", "Jam", "Hari"]
+
+        else:
+            units = []
+
+        self.from_unit_combobox["values"] = units
+        self.to_unit_combobox["values"] = units
+        if units:
+            self.from_unit_combobox.current(0)
+            self.to_unit_combobox.current(0)
 
     def validate_input(self, new_value):
-        # Allow empty input
         if new_value == "":
             return True
-        # Only allow numeric input
         try:
             float(new_value)
             return True
@@ -132,7 +184,11 @@ class UnitConverterApp:
 
         converted_value = self.convert_units(input_value, from_unit, to_unit)
 
-        if converted_value.is_integer():
+        if converted_value is None:
+            self.converted_value.set("Konversi tidak valid.")
+            return
+
+        if isinstance(converted_value, float) and converted_value.is_integer():
             converted_value = int(converted_value)
             input_value = int(input_value)
             result_text = f"{input_value} {from_unit} = {converted_value} {to_unit}"
@@ -159,14 +215,59 @@ class UnitConverterApp:
             "Kaki": 0.3048
         }
 
-        if from_unit not in conversion_factors_to_meter or to_unit not in conversion_factors_to_meter:
+        conversion_factors_to_gram = {
+            "Gram": 1,
+            "Kilogram": 1000,
+            "Ons": 28.3495,
+            "Pound": 453.592
+        }
+
+        def convert_temperature(value, from_unit, to_unit):
+            if from_unit == "Celsius":
+                if to_unit == "Fahrenheit":
+                    return (value * 9/5) + 32
+                elif to_unit == "Kelvin":
+                    return value + 273.15
+            elif from_unit == "Fahrenheit":
+                if to_unit == "Celsius":
+                    return (value - 32) * 5/9
+                elif to_unit == "Kelvin":
+                    return (value - 32) * 5/9 + 273.15
+            elif from_unit == "Kelvin":
+                if to_unit == "Celsius":
+                    return value - 273.15
+                elif to_unit == "Fahrenheit":
+                    return (value - 273.15) * 9/5 + 32
             return None
+    
+        conversion_factors_to_second = {
+            "Detik": 1,
+            "Menit": 60,
+            "Jam": 3600,
+            "Hari": 86400
+        }
 
-        value_in_meters = value * conversion_factors_to_meter[from_unit]
-        converted_value = value_in_meters / conversion_factors_to_meter[to_unit]
 
-        return converted_value
+        if from_unit in conversion_factors_to_meter and to_unit in conversion_factors_to_meter:
+            value_in_meters = value * conversion_factors_to_meter[from_unit]
+            converted_value = value_in_meters / conversion_factors_to_meter[to_unit]
+            return converted_value
 
+        if from_unit in conversion_factors_to_gram and to_unit in conversion_factors_to_gram:
+            value_in_grams = value * conversion_factors_to_gram[from_unit]
+            converted_value = value_in_grams / conversion_factors_to_gram[to_unit]
+            return converted_value
+
+        if from_unit in ["Celsius", "Fahrenheit", "Kelvin"] and to_unit in ["Celsius", "Fahrenheit", "Kelvin"]:
+            return convert_temperature(value, from_unit, to_unit)
+        
+        if from_unit in conversion_factors_to_second and to_unit in conversion_factors_to_second:
+            value_in_seconds = value * conversion_factors_to_second[from_unit]
+            converted_value = value_in_seconds / conversion_factors_to_second[to_unit]
+            return converted_value
+
+        return None
+    
     def update_history_display(self):
         self.history_display.delete(1.0, tk.END)
         temp_queue = Queue()
@@ -176,7 +277,6 @@ class UnitConverterApp:
             self.history_display.insert(tk.END, entry + '\n')
             temp_queue.enqueue(entry)
 
-        # Restore original queue
         while not temp_queue.is_empty():
             self.history_queue.enqueue(temp_queue.dequeue())
 
